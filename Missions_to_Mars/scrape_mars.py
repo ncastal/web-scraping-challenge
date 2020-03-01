@@ -5,21 +5,24 @@ import pandas as pd
 from splinter import Browser
 
 def init_browser():
-    # @NOTE: Replace the path with your actual path to the chromedriver
     executable_path = {"executable_path": "C:/Users/nickc/Downloads/chromedriver_win32/chromedriver.exe"}
     return Browser("chrome", **executable_path, headless=False)
-
+#function used to scrape websites
 def scrape():
+    #dictonary for all data collected from webscraping to be return and loaded in mongodb
     mars_data={}
+    browser=init_browser()
     url="https://mars.nasa.gov/news/"
-    response=requests.get(url)
-    soup=BeautifulSoup(response.text,'html.parser')
+    browser.visit(url)
+    html=browser.html
+    soup=BeautifulSoup(html,'html.parser')
 
-    mars_data["news_title"]=soup.find('div', class_='content_title').text
-    mars_data["news_p"]=soup.find('div',class_="rollover_description_inner").text
+    news=soup.find('li', class_='slide')
+    mars_data["news_title"]=news.find('h3').text
+    mars_data["news_p"]=news.find('div',class_="rollover_description_inner").text
 
     url="https://www.jpl.nasa.gov/spaceimages/?search=&category=Mars"
-    browser=init_browser()
+    
     browser.visit(url)
 
     browser.fill('search','Featured')
@@ -57,6 +60,7 @@ def scrape():
     mars_table=pd.read_html(url)
     mars_table=pd.DataFrame(mars_table[0])
     mars_facts=[]
+    #creating a dictonary for mars facts, used to create table in html page
     for i in  mars_table.index:
         mars_facts.append({"type":mars_table[0][i], "value":mars_table[1][i]})
     mars_data["mars_facts"]=mars_facts
